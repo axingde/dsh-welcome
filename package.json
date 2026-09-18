@@ -1,6 +1,6 @@
 {
   "name": "dsh-welcome",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "DSH（DeepSeek Harness）插件：每个新会话自动发一条欢迎消息，由助手直接输出",
   "license": "MIT",
   "author": "axingde (https://github.com/axingde)",

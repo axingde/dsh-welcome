@@ -1,6 +1,6 @@
 # dsh-welcome
 
-DSH（DeepSeek Harness）插件：**每个新会话自动发一条欢迎消息**「你好，欢迎来到harness」，
+DSH（DeepSeek Harness）插件：**每个新会话自动发一条欢迎消息**「Hello,欢迎来到DSH」，
 由助手以**正常的助手气泡**直接输出（不是带 plugin 标签的上下文注入）。
 
 ## 工作原理
@@ -20,7 +20,7 @@ DSH（DeepSeek Harness）插件：**每个新会话自动发一条欢迎消息**
 为什么是合成轮次而不是注入 user 消息：
 
 - UI 的助手节点由 `step/start` 启动、`assistant/message` 定稿——只要轮次完整闭合，
-  新会话顶部就是一条正常的助手气泡「你好，欢迎来到harness」；
+  新会话顶部就是一条正常的助手气泡「Hello,欢迎来到DSH」；
 - 轮次闭合（`turn/end`）后，对话流 / 轨迹 / 会话统计（turns/steps）都把它视为一个
   普通已完成轮次，不会出现悬挂状态；
 - 模型历史以这条 assistant 消息开头，用户第一条消息到来时自然衔接（从 turn 1 继续）。
@@ -62,7 +62,7 @@ dsh plugin --profile web add "file:D:\dsh_stu\dsh-welcome"
 ```yaml
 - id: welcome
   config:
-    greeting: '你好，欢迎来到harness'
+    greeting: 'Hello,欢迎来到DSH'
     provider: 'deepseek-official'
     model: 'deepseek-v4-flash'
 ```
@@ -70,10 +70,10 @@ dsh plugin --profile web add "file:D:\dsh_stu\dsh-welcome"
 ## 验证
 
 - `dsh --profile web --dump-config`：查看组合后的配置树，应包含 `welcome` 行。
-- `node test.mjs`：逻辑单元测试（17 项断言）。
+- `pnpm install`（或 `npm install`）后运行 `node test.mjs`：逻辑单元测试（18 项断言）。
 - 端到端：`POST /api/session.create` 后读取 `session.history`，应看到
-  `turn/start → step/start → assistant/message(你好，欢迎来到harness) → step/end → turn/end`。
-- 重启后在 web UI 新建一个会话：对话顶部应出现一条**助手气泡**「你好，欢迎来到harness」。
+  `turn/start → step/start → assistant/message(Hello,欢迎来到DSH) → step/end → turn/end`。
+- 重启后在 web UI 新建一个会话：对话顶部应出现一条**助手气泡**「Hello,欢迎来到DSH」。
 
 ## 从 npm 安装
 

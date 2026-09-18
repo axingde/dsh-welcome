@@ -1,8 +1,10 @@
 /**
  * dsh-welcome 逻辑单元测试：不依赖完整 harness，直接用 mock ctx/session
- * 验证 apply() 在 session/created 时的行为。
+ * 验证 Config 默认值与 apply() 在 session/created 时的行为。
+ *
+ * 运行：node test.mjs
  */
-import { apply } from "file:///C:/Users/donghengxing/.dsh/profiles/web/node_modules/dsh-welcome/index.js";
+import { apply, Config } from "./index.js";
 
 let failures = 0;
 function assert(cond, label) {
@@ -48,11 +50,21 @@ function makeSession(id, delegationDepth) {
   };
 }
 
+const GREETING = "Hello,欢迎来到DSH";
+
+// ── Config schema 默认值 ───────────────────────────────────────────────
+{
+  console.log("Config schema 默认值:");
+  const resolved = Config({});
+  assert(resolved.greeting === GREETING, `默认欢迎语为 "${GREETING}"（实际: ${resolved.greeting}）`);
+  assert(resolved.provider === "deepseek-official" && resolved.model === "deepseek-v4-flash", "默认 provider/model 正确");
+}
+
 // ── 顶层会话：应该注入一个完整合成助手轮次 ────────────────────────────────
 {
   console.log("顶层会话 (delegationDepth=0):");
   const { ctx, listeners } = makeCtx();
-  apply(ctx, { greeting: "你好，欢迎来到harness", provider: "deepseek-official", model: "deepseek-v4-flash" });
+  apply(ctx, { greeting: GREETING, provider: "deepseek-official", model: "deepseek-v4-flash" });
   assert(listeners.has("session/created"), "注册了 session/created 监听");
   assert(listeners.get("session/created").opts?.global === true, "监听是全局的 ({global:true})");
 
@@ -73,7 +85,7 @@ function makeSession(id, delegationDepth) {
   assert(typeof msg.id === "string" && msg.id !== "", "消息带稳定 id");
   assert(msg.source?.kind === "model", "消息 source 为 model");
   assert(msg.source?.provider === "deepseek-official" && msg.source?.model === "deepseek-v4-flash", "带 provider/model 溯源");
-  assert(msg.content?.[0]?.type === "text" && msg.content[0].text === "你好，欢迎来到harness", "内容为问候文本");
+  assert(msg.content?.[0]?.type === "text" && msg.content[0].text === GREETING, "内容为问候文本");
   assert(session.appended[3].data.step === 0, "step/end 关闭 step 0");
   assert(session.appended[4].data.reason?.kind === "completed", "turn/end 以 completed 关闭");
 }
@@ -82,7 +94,7 @@ function makeSession(id, delegationDepth) {
 {
   console.log("子智能体会话 (delegationDepth=1):");
   const { ctx, listeners } = makeCtx();
-  apply(ctx, { greeting: "你好，欢迎来到harness", provider: "deepseek-official", model: "deepseek-v4-flash" });
+  apply(ctx, { greeting: GREETING, provider: "deepseek-official", model: "deepseek-v4-flash" });
   const session = makeSession("sess-2", 1);
   listeners.get("session/created").cb(session);
   assert(session.appended.length === 0, "不注入问候");

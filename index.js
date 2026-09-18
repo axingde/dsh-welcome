@@ -7,7 +7,7 @@
  *
  *   turn/start → step/start → assistant/message → step/end → turn/end
  *
- * 效果：新会话对话顶部出现一条**正常的助手气泡**「你好，欢迎来到harness」，
+ * 效果：新会话对话顶部出现一条**正常的助手气泡**「Hello,欢迎来到DSH」，
  * 由助手"直接说出"，而不是带 plugin 标签的上下文注入。因为：
  *   - UI 的助手节点由 step/start 启动、assistant/message 定稿（无 chunk 也可渲染）；
  *   - 轮次完整闭合（turn/end），对话流/轨迹/统计折叠都视为一个普通已完成轮次；
@@ -29,7 +29,7 @@ export const inject = ["sessions"];
 
 /** 可配置项：欢迎语文本，以及 assistant 消息的 provider/model 溯源。 */
 export const Config = z.object({
-  greeting: z.string().default("你好，欢迎来到harness"),
+  greeting: z.string().default("Hello,欢迎来到DSH"),
   provider: z.string().default("deepseek-official"),
   model: z.string().default("deepseek-v4-flash")
 });
