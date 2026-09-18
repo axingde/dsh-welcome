@@ -1,0 +1,8 @@
+# dsh-welcome bundle patch: 把自己的 Loader 行插入配置树。
+#
+# 该文件是 bundle 层（dsh.profile.bundles 里排在 base/web-app 之后的最后一层），
+# 在 profile 自身的 cordis.patch.yml 之前应用。行名 'dsh-welcome' 从 profile 的
+# node_modules 解析（pnpm 安装的树外插件）。
+- insert:
+    - id: welcome
+      name: 'dsh-welcome'

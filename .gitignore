@@ -1,0 +1,15 @@
+# 依赖（由 pnpm/npm 安装，不进仓库）
+node_modules/
+
+# npm pack 产物
+*.tgz
+
+# 日志与调试
+*.log
+npm-debug.log*
+
+# 系统/编辑器杂项
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

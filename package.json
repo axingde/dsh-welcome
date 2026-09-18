@@ -1,0 +1,41 @@
+{
+  "name": "dsh-welcome",
+  "version": "0.1.1",
+  "description": "DSH（DeepSeek Harness）插件：每个新会话自动发一条欢迎消息，由助手直接输出",
+  "license": "MIT",
+  "author": "axingde (https://github.com/axingde)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axingde/dsh-welcome.git"
+  },
+  "homepage": "https://github.com/axingde/dsh-welcome#readme",
+  "bugs": {
+    "url": "https://github.com/axingde/dsh-welcome/issues"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "welcome",
+    "greeting"
+  ],
+  "type": "module",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "cordis.patch.yml"
+  ],
+  "scripts": {
+    "test": "node test.mjs",
+    "prepublishOnly": "node test.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6",
+    "@deepseek-ai/schemastery": "^3.18.1"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
