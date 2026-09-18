@@ -16,7 +16,7 @@ function assert(cond, label) {
   }
 }
 
-function makeCtx() {
+function makeCtx(lastTurn = 0) {
   const listeners = new Map();
   const warnings = [];
   return {
@@ -33,17 +33,22 @@ function makeCtx() {
         async flush() {
           return true;
         }
+      },
+      sessionProjections: {
+        stateOf(_session, key) {
+          return key === "turnBoundary" ? { lastTurn } : undefined;
+        }
       }
     }
   };
 }
 
-function makeSession(id, delegationDepth) {
+function makeSession(id, delegationDepth, headerExtra = {}) {
   const appended = [];
   return {
     id,
     appended,
-    header: { id, delegationDepth },
+    header: { id, delegationDepth, isSeeded: false, ...headerExtra },
     append(type, data, opts) {
       appended.push({ type, data, opts });
     }
@@ -77,17 +82,47 @@ const GREETING = "Hello,欢迎来到DSH";
     JSON.stringify(types) === JSON.stringify(["turn/start", "step/start", "assistant/message", "step/end", "turn/end"]),
     `事件顺序正确: ${types.join(" → ")}`
   );
-  assert(session.appended[0].data.turn === 0 && session.appended[1].data.turn === 0 && session.appended[1].data.step === 0, "轮次编号 turn 0 / step 0");
+  // 轮次号必须是正整数：dsh 会话格式要求 turn/step >= 1 且按日志顺序严格连续。
+  // 写 turn:0 会让整份日志无法从 v2 迁移到 v3（web 端历史加载失败）。
+  assert(session.appended[0].data.turn === 1, `全新会话轮次号为 1（实际: ${session.appended[0].data.turn}）`);
+  assert(session.appended[1].data.turn === 1 && session.appended[1].data.step === 1, "step 从 1 开始");
   const msgEvent = session.appended[2];
   assert(msgEvent.opts?.surfaceOp === "append", "assistant/message 带 surfaceOp append");
+  // stream 是 assistant/message 的必填字段（恢复时校验为数组），合成消息写空数组。
+  assert(
+    Array.isArray(msgEvent.data.stream) && msgEvent.data.stream.length === 0,
+    `assistant/message 的 data.stream 是空数组（实际: ${JSON.stringify(msgEvent.data.stream)}）`
+  );
   const msg = msgEvent.data.message;
   assert(msg.role === "assistant", "消息 role 为 assistant");
   assert(typeof msg.id === "string" && msg.id !== "", "消息带稳定 id");
   assert(msg.source?.kind === "model", "消息 source 为 model");
   assert(msg.source?.provider === "deepseek-official" && msg.source?.model === "deepseek-v4-flash", "带 provider/model 溯源");
   assert(msg.content?.[0]?.type === "text" && msg.content[0].text === GREETING, "内容为问候文本");
-  assert(session.appended[3].data.step === 0, "step/end 关闭 step 0");
+  assert(session.appended[3].data.step === 1, "step/end 关闭 step 1");
   assert(session.appended[4].data.reason?.kind === "completed", "turn/end 以 completed 关闭");
+}
+
+// ── 已有轮次的会话：不应该问候 ────────────────────────────────────────────
+// session/created 在会话被迁移/恢复/重新装载时也会触发，此时日志里已经有轮次，
+// 再插一条问候会污染原对话，并留下不合规的 turn:0 事件。
+{
+  console.log("已有轮次的会话 (turnBoundary.lastTurn = 3):");
+  const { ctx, listeners } = makeCtx(3);
+  apply(ctx, { greeting: GREETING, provider: "deepseek-official", model: "deepseek-v4-flash" });
+  const session = makeSession("sess-restored", 0);
+  listeners.get("session/created").cb(session);
+  assert(session.appended.length === 0, "已有轮次时不注入问候");
+}
+
+// ── 带种子的会话：不应该问候 ──────────────────────────────────────────────
+{
+  console.log("带种子的会话 (isSeeded = true):");
+  const { ctx, listeners } = makeCtx(0);
+  apply(ctx, { greeting: GREETING, provider: "deepseek-official", model: "deepseek-v4-flash" });
+  const session = makeSession("sess-seeded", 0, { isSeeded: true, parentSession: "session-parent" });
+  listeners.get("session/created").cb(session);
+  assert(session.appended.length === 0, "带种子会话不注入问候");
 }
 
 // ── 子智能体会话：应该跳过 ─────────────────────────────────────────────

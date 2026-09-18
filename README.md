@@ -8,8 +8,11 @@ DSH（DeepSeek Harness）插件：**每个新会话自动发一条欢迎消息**
 宿主侧插件（纯 JS，无前端构建），挂在 web profile 上：
 
 - 订阅全局 `session/created` 事件（`ctx.on(..., { global: true })`）；
-- 跳过子智能体会话（`header.delegationDepth > 0`）；
-- 向新会话追加一个**完整的合成助手轮次**（turn 0 / step 0）：
+- **只问候全新的空会话**：跳过子智能体会话（`header.delegationDepth > 0`）、
+  跳过带种子的会话（`header.isSeeded`）、跳过已有轮次的会话
+  （`turnBoundary.lastTurn > 0`）；
+- 向新会话追加一个**完整的合成助手轮次**（轮次号 = `turnBoundary` 投影的
+  `lastTurn` + 1，step 从 1 开始）：
 
   ```
   turn/start → step/start → assistant/message → step/end → turn/end(completed)
@@ -23,7 +26,31 @@ DSH（DeepSeek Harness）插件：**每个新会话自动发一条欢迎消息**
   新会话顶部就是一条正常的助手气泡「Hello,欢迎来到DSH」；
 - 轮次闭合（`turn/end`）后，对话流 / 轨迹 / 会话统计（turns/steps）都把它视为一个
   普通已完成轮次，不会出现悬挂状态；
-- 模型历史以这条 assistant 消息开头，用户第一条消息到来时自然衔接（从 turn 1 继续）。
+- 模型历史以这条 assistant 消息开头，用户第一条消息到来时自然衔接。
+
+## 两个必须遵守的格式约束
+
+> **① 轮次号不能写 0。** 会话格式要求 `assistant/message` 的 `turn`、`step` 为正整数，
+> 且按日志顺序严格连续（1,2,3,…）。写 `turn:0` 不会当场报错，但会让这份日志
+> **永久无法从 v2 迁移到 v3**，web 端表现为该会话历史加载失败
+> （`refuses this format v2 Session: turn must be positive`）。
+> 另外带种子（`parentSession` / `seedLength`）恢复的会话，日志里已有轮次，
+> 所以取号必须从投影推导，不能写死常量。
+
+> **② `stream` 是必填字段。** `assistant/message` 的 `data.stream` 必须是数组
+> （合成消息没有分片流，写 `[]`）。会话恢复时会走 `dsh-session` 的 seed 校验，
+> 缺字段会报 `seed assistant/message at index N has invalid settlement fields`，
+> 该会话**整份无法加载**。
+
+## 为什么不能无条件问候
+
+`session/created` 不只在用户点"新建会话"时触发——会话被**迁移、恢复、重新装载**时
+也会触发。早期版本无条件注入，后果是：
+
+- 给历史会话中间补了一条问候，污染原对话；
+- 凭空造出一批**只有问候语的空会话**（它们还会因为 `turn:0` 而加载失败）。
+
+所以必须三条同时满足：`delegationDepth === 0 && !isSeeded && lastTurn === 0`。
 
 已知副作用：`turn/start` 会让会话**立即变为非 blank**——新会话不再作为隐藏的空白
 占位被复用，会立刻出现在会话列表中（标题回退为 cwd 名，直到用户首条消息生成标题）。
