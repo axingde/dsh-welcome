@@ -13,3 +13,6 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# WorkBuddy 工作区数据（记忆/技能等，不进仓库）
+.workbuddy/
