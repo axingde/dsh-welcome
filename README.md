@@ -1,6 +1,9 @@
 # dsh-welcome
 
-DSH（DeepSeek Harness）插件：**每个新会话自动发一条欢迎消息**「Hello,欢迎来到DSH」，
+[![npm version](https://img.shields.io/npm/v/dsh-welcome)](https://www.npmjs.com/package/dsh-welcome)
+[![license](https://img.shields.io/npm/l/dsh-welcome)](./LICENSE)
+
+DSH（DeepSeek Harness）插件：**每个新建的空会话自动发一条欢迎消息**「Hello,欢迎来到DSH」，
 由助手以**正常的助手气泡**直接输出（不是带 plugin 标签的上下文注入）。
 
 ## 工作原理
@@ -8,6 +11,8 @@ DSH（DeepSeek Harness）插件：**每个新会话自动发一条欢迎消息**
 宿主侧插件（纯 JS，无前端构建），挂在 web profile 上：
 
 - 订阅全局 `session/created` 事件（`ctx.on(..., { global: true })`）；
+- 依赖两个服务：`inject: ["sessions", "sessionProjections"]`。后者用于读取当前轮次号，
+  若宿主没挂载投影注册表，插件不会激活（也就不注入问候，而不是注入错的数据）；
 - **只问候全新的空会话**：跳过子智能体会话（`header.delegationDepth > 0`）、
   跳过带种子的会话（`header.isSeeded`）、跳过已有轮次的会话
   （`turnBoundary.lastTurn > 0`）；
@@ -69,7 +74,7 @@ dsh-welcome/
 
 ```powershell
 # 需要 pnpm 在 PATH 上（npm i -g pnpm）
-dsh plugin --profile web add "file:D:\dsh_stu\dsh-welcome"
+dsh plugin --profile web add "file:D:\path\to\dsh-welcome"
 ```
 
 `dsh plugin add` 会：① pnpm 安装到 profile 的 node_modules；② 检测到包声明了
@@ -84,7 +89,7 @@ dsh plugin --profile web add "file:D:\dsh_stu\dsh-welcome"
 > 不含版本号。结果是**只重跑 `dsh plugin add`／`pnpm install`（含 `--force`）都是空操作**：
 >
 > ```
-> $ dsh plugin --profile web add "file:D:\dsh_stu\dsh-welcome"
+> $ dsh plugin --profile web add "file:D:\path\to\dsh-welcome"
 > Progress: resolved 1, reused 0, downloaded 0, added 0
 > Already up to date
 > ```
@@ -126,9 +131,38 @@ dsh plugin --profile web add "file:D:\dsh_stu\dsh-welcome"
 
 ```powershell
 dsh plugin --profile web add dsh-welcome
+# 指定版本
+dsh plugin --profile web add dsh-welcome@0.1.3
 # 或 npx 形式
 npx @deepseek-ai/dsh plugin --profile web add dsh-welcome
 ```
+
+## 更新记录
+
+### 0.1.3
+
+修复两个都会导致**会话整份无法加载**的缺陷，并收紧触发条件：
+
+- 轮次坐标不再写死 `turn:0 / step:0`，改为从 `turnBoundary` 投影取
+  `lastTurn + 1`、step 从 1 开始。`turn:0` 会让日志**永久无法迁移到 v3**，
+  web 端报 `refuses this format v2 Session: turn must be positive`；
+- `assistant/message` 补上必填字段 `stream: []`，缺失会在会话恢复时报
+  `seed assistant/message at index N has invalid settlement fields`；
+- 触发条件收紧为 `delegationDepth === 0 && !isSeeded && lastTurn === 0`。
+  0.1.2 会给**历史会话中间**补一条问候、并凭空造出一批只有问候语的空会话；
+- `inject` 增加 `sessionProjections`（用于读取当前轮次号）。
+
+> 从 0.1.2 升级：若 profile 里已装过旧版，需**先删掉
+> `node_modules\dsh-welcome` 再 install** 才会真正更新，原因见上文
+> 「改了源码怎么让 profile 更新？」。
+
+### 0.1.2
+
+- 欢迎语改为「Hello,欢迎来到DSH」。
+
+### 0.1.1
+
+- 首个版本：向新会话注入一个完整的合成助手轮次。
 
 ## License
 
