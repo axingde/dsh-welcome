@@ -77,9 +77,28 @@ dsh plugin --profile web add "file:D:\dsh_stu\dsh-welcome"
 
 然后**重启 `dsh web`** 生效（web profile 的 HMR 被禁用，热更新不可用）。
 
-> 注意：`file:` 依赖是安装时的快照拷贝。修改源码后需要**升版本号**（package.json
-> 的 `version`）再重跑上面的 add 命令，或手动把文件复制到
-> `$DSH_HOME\profiles\web\node_modules\dsh-welcome\`。
+> **改了源码怎么让 profile 更新？**
+>
+> profile 用的是 `nodeLinker: hoisted`，`node_modules/dsh-welcome` 是安装时**复制**的
+> 真实目录（不是软链）；而 pnpm 在 lockfile 里对目录依赖只记 `version: file:<路径>`，
+> 不含版本号。结果是**只重跑 `dsh plugin add`／`pnpm install`（含 `--force`）都是空操作**：
+>
+> ```
+> $ dsh plugin --profile web add "file:D:\dsh_stu\dsh-welcome"
+> Progress: resolved 1, reused 0, downloaded 0, added 0
+> Already up to date
+> ```
+>
+> 可靠做法是**先删掉副本再装**——pnpm 发现目录缺失才会重新打包复制：
+>
+> ```powershell
+> Remove-Item -Recurse -Force "$env:USERPROFILE\.dsh\profiles\web\node_modules\dsh-welcome"
+> dsh plugin --profile web install
+> ```
+>
+> 验证是否生效：比对 `node_modules\dsh-welcome\package.json` 的 `version` 与源码。
+> 想免去每次重装，可改用 `link:` 协议（软链，改动即时生效），代价是插件会从自己
+> 目录解析 `@deepseek-ai/*`，存在双实例风险。
 
 ## 配置
 
@@ -97,10 +116,11 @@ dsh plugin --profile web add "file:D:\dsh_stu\dsh-welcome"
 ## 验证
 
 - `dsh --profile web --dump-config`：查看组合后的配置树，应包含 `welcome` 行。
-- `pnpm install`（或 `npm install`）后运行 `node test.mjs`：逻辑单元测试（18 项断言）。
+- `pnpm install`（或 `npm install`）后运行 `node test.mjs`：逻辑单元测试（22 项断言）。
 - 端到端：`POST /api/session.create` 后读取 `session.history`，应看到
   `turn/start → step/start → assistant/message(Hello,欢迎来到DSH) → step/end → turn/end`。
 - 重启后在 web UI 新建一个会话：对话顶部应出现一条**助手气泡**「Hello,欢迎来到DSH」。
+  在**已有内容的历史会话**上不应出现问候（那是插件早期版本的缺陷）。
 
 ## 从 npm 安装
 
