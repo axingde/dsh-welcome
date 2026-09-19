@@ -1,7 +1,7 @@
 {
   "name": "dsh-welcome",
-  "version": "1.0.0",
-  "description": "DSH（DeepSeek Harness）插件：向每个全新空会话自动发送欢迎消息，以正常助手轮次直接输出（首个正式版）",
+  "version": "1.0.1",
+  "description": "DSH（DeepSeek Harness）插件：向每个全新空会话自动发送欢迎消息，以正常助手轮次直接输出",
   "license": "MIT",
   "author": "axingde (https://github.com/axingde)",
   "repository": {

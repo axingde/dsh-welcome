@@ -15,7 +15,7 @@ DSH（DeepSeek Harness）插件：**每个新建的空会话自动发一条欢�
 ```powershell
 dsh plugin --profile web add dsh-welcome
 # 指定版本
-dsh plugin --profile web add dsh-welcome@1.0.0
+dsh plugin --profile web add dsh-welcome@1.0.1
 # 或 npx 形式
 npx @deepseek-ai/dsh plugin --profile web add dsh-welcome
 ```
@@ -49,6 +49,11 @@ npx @deepseek-ai/dsh web
 - 对话顶部出现一条**助手气泡**「Hello,欢迎来到DSH」→ 安装成功；
 
 ![新建会话出现欢迎气泡后](./README.assets/image-20260919085813574.png)
+
+> 少数情况下（宿主已经为会话建好 agent loop 且其轮次游标形态不可预期时）插件不会
+> 自己占轮次，而是把欢迎语顺延到宿主首次开轮再插进去 —— 此时气泡会随你的第一条
+> 消息一起出现，并打印一条 `greeting deferred until the host opens its first step`
+> 告警。这是为了避免和宿主撞轮次号（撞号会让界面按轮次归组时丢掉第一次问答）。
 
 ## 目录结构
 
