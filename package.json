@@ -1,7 +1,7 @@
 {
   "name": "dsh-welcome",
-  "version": "0.1.3",
-  "description": "DSH（DeepSeek Harness）插件：每个新会话自动发一条欢迎消息，由助手直接输出",
+  "version": "1.0.0",
+  "description": "DSH（DeepSeek Harness）插件：向每个全新空会话自动发送欢迎消息，以正常助手轮次直接输出（首个正式版）",
   "license": "MIT",
   "author": "axingde (https://github.com/axingde)",
   "repository": {
@@ -23,7 +23,8 @@
   "main": "index.js",
   "files": [
     "index.js",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "README.assets"
   ],
   "scripts": {
     "test": "node test.mjs",
